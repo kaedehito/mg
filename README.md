@@ -23,6 +23,12 @@ cargo install --git https://github.com/kaedehito/mg.git
 
 `mg` supports the following commands:
 
+### Initialize mg Control
+```sh
+mg init <label_name>
+```
+Initialize a new `mg` control with the specified label. This sets up the necessary file structure and saves the initial state under the given label.
+
 ### Save Progress
 ```sh
 mg save <label_name>

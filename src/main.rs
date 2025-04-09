@@ -1,5 +1,6 @@
 mod compress;
 mod get_ignore;
+mod init;
 mod labels;
 mod list;
 mod paths;
@@ -18,6 +19,11 @@ struct Cli {
 enum Commands {
     /// Save a current progress
     Save {
+        /// Make a break to save the current progress.
+        label: Option<String>,
+    },
+    /// Initalize a new progress
+    Init {
         /// Make a break to save the current progress.
         label: Option<String>,
     },
@@ -42,7 +48,7 @@ fn main() {
     match args.command {
         Commands::Save { label } => {
             if let Some(label) = label {
-                compress::compless_file(&label).unwrap_or_else(|e| {
+                compress::compress_file(&label).unwrap_or_else(|e| {
                     eprintln!("Failed to save files: {}", e);
                     std::process::exit(1);
                 });
@@ -52,11 +58,15 @@ fn main() {
                     eprintln!("Error getting latest label: {}", e);
                     std::process::exit(1);
                 });
-                compress::compless_file(&latest_label).unwrap_or_else(|e| {
+                compress::compress_file(&latest_label).unwrap_or_else(|e| {
                     eprintln!("Failed to save files: {}", e);
                     std::process::exit(1);
                 });
             }
+        }
+
+        Commands::Init { label } => {
+            init::init(label);
         }
 
         Commands::Remove { label } => {

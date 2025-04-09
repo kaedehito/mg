@@ -7,7 +7,7 @@ use crate::paths::{find_mg, mg};
 use crate::uuid::get_uuid;
 use crate::{labels, spinner};
 
-pub fn compless_file(label: &str) -> std::io::Result<()> {
+pub fn compress_file(label: &str) -> std::io::Result<()> {
     let build_dir = mg().join("saves").join("build");
     let out_dir = mg().join("saves").join(get_uuid(label));
     fs::create_dir_all(&out_dir)?;
