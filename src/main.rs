@@ -7,6 +7,9 @@ mod paths;
 mod remove;
 mod spinner;
 mod uuid;
+mod reset;
+mod collect;
+mod unpack;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -39,6 +42,10 @@ enum Commands {
         /// Required field to return to the specified delimiter.
         /// If not specified, the last saved progress will be used.
         label: Option<String>,
+
+        /// If true, the current progress will be restored from the "recovery" label.
+        #[arg(long, short)]
+        recovory: bool,
     },
 }
 
@@ -77,14 +84,8 @@ fn main() {
             list::list();
         }
 
-        Commands::Reset { label } => {
-            if let Some(label) = label {
-                // Reset logic here
-                println!("Resetting to label: {}", label);
-            } else {
-                // Reset to last saved progress
-                println!("Resetting to last saved progress.");
-            }
+        Commands::Reset { label, recovory} => {
+            reset::reset(label, recovory);
         }
     }
 }

@@ -61,6 +61,17 @@ impl Labels {
 
         p.is_some()
     }
+
+    pub fn get_label(name: &str) -> Option<Label> {
+
+        let labels_data = read_and_labels();
+
+        let name_hash = get_uuid(name);
+
+        labels_data.labels.into_iter().find(|f| f.uuid == name_hash)
+    }
+
+    
     pub fn add_label(name: &str) -> std::io::Result<()> {
         let mg_path = crate::paths::mg().join("saves").join("saves.json");
 
@@ -139,6 +150,22 @@ impl Labels {
 
         if let Some(latest_label) = labels.first() {
             return Ok(latest_label.name.clone());
+        } else {
+            return Err(std::io::Error::new(
+                std::io::ErrorKind::NotFound,
+                "No labels found",
+            ));
+        }
+    }
+
+    pub fn get_latest_labels() -> std::io::Result<Label> {
+        let labels_data = read_and_labels();
+
+        let mut labels = labels_data.labels.clone();
+        labels.sort_by(|a, b| b.time.cmp(&a.time)); // Sort the labels by time in descending order
+
+        if let Some(latest_label) = labels.first() {
+            return Ok(latest_label.clone());
         } else {
             return Err(std::io::Error::new(
                 std::io::ErrorKind::NotFound,
