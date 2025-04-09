@@ -1,5 +1,3 @@
-use chrono::TimeZone;
-
 pub fn list() {
     let mg_path = crate::paths::mg().join("saves").join("saves.json");
 
