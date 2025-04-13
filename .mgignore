@@ -1,0 +1,6 @@
+# Ignore files(or directory)
+target
+.gitignore
+
+# this is not exist file
+foo
