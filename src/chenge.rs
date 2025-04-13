@@ -1,6 +1,6 @@
-use std::{env, fs::{self, File}, io::Write};
+use std::{env, fs::{self, File}, io::Write, path::Path};
 
-use crate::{collect, compress, labels::{Label, Labels}, paths::{build_dir, mg}, spinner, unpack};
+use crate::{collect, compress, labels::{Label, Labels}, paths::{build_dir, mg}, recovery_label, remove_all, restore, spinner, unpack};
 
 
 
@@ -47,15 +47,8 @@ fn chenge_real(label: Label, recovory: bool) {
     let recovery_path = mg_path.join("saves").join("recovery").join("save.tar.zst");
 
     if recovory && recovery_path.exists() {
-        println!("\x1b[33mINFO:\x1b[0m Restoring progress from 'recovery'...");
-
-        unpack::unpack(recovery_path.clone(), current.clone()).unwrap_or_else(|e| {
-            eprintln!("\x1b[31mAbort:\x1b[0m Failed to restore 'recovery' label: {}", e);
-            std::process::exit(1);
-        });
-        println!("\x1b[32mINFO:\x1b[0m Successfully restored progress from 'recovery' label.");
-        std::process::exit(0);
-
+        restore::restore_recovery();
+        std::process::exit(1);
     }else if recovory && !recovery_path.exists(){
         println!("\x1b[31mAbort:\x1b[0m label is not found");
         std::process::exit(1);
@@ -63,57 +56,15 @@ fn chenge_real(label: Label, recovory: bool) {
 
     // Save current progress to "recovery" label
     println!("\x1b[33mINFO:\x1b[0m Saving current progress to 'recovery' label...");
-    collect::collect_files().unwrap_or_else(|e| {
-        eprintln!("\x1b[31mAbort:\x1b[0m Failed to collect files: {}", e);
-        std::process::exit(1);
-    });
+    recovery_label::recovery_label(&mg_path);
 
-    let tar_file = File::open(build_dir().join("archive.tar")).unwrap_or_else(|e| {
-        eprintln!("\x1b[31mAbort:\x1b[0m Failed to open tar file: {}", e);
-        std::process::exit(1);
-    });
-
-    let recovery_dir = mg_path.join("saves").join("recovery");
-    if !recovery_dir.exists() {
-        fs::create_dir_all(&recovery_dir).unwrap_or_else(|e| {
-            eprintln!("\x1b[31mAbort:\x1b[0m Failed to create recovery directory: {}", e);
-            std::process::exit(1);
-        });
-    }
-
-    compress::compress(tar_file, recovery_dir).unwrap_or_else(|e| {
-        eprintln!("\x1b[31mAbort:\x1b[0m Failed to save recovery label: {}", e);
-        std::process::exit(1);
-    });
-
-    println!("Recovery files: \x1b[32mok\x1b[0m");
 
     let file_path = mg_path.join("saves").join(label.uuid).join("save.tar.zst");
 
     let prg = spinner::spawn_new_spinner();
 
     // Remove all directories/files in the current directory except ".mg"
-    for dir in current.read_dir().unwrap() {
-        let dir = dir.unwrap().path();
-        let file_name = dir.file_name().unwrap().to_str().unwrap().to_string();
-
-        prg.set_message(file_name.clone());
-
-        if file_name != ".mg" {
-            if dir.is_file(){
-                fs::remove_file(&dir).unwrap_or_else(|e| {
-                    eprintln!("\x1b[31mFailed:\x1b[0m Failed to remove directory: {}", e);
-                    std::process::exit(1);
-                });
-                continue;
-            }
-
-            fs::remove_dir_all(dir).unwrap_or_else(|e| {
-                eprintln!("\x1b[31mFailed:\x1b[0m Failed to remove directory: {}", e);
-                std::process::exit(1);
-            });
-        }
-    }
+    remove_all::remove_all(prg.clone());
 
     prg.set_message("Unpacking files...");
 
@@ -131,6 +82,8 @@ fn chenge_real(label: Label, recovory: bool) {
     println!("Reset: \x1b[32mok\x1b[0m");
     println!("\x1b[33mYou can use 'mg chenge -r' to recover files\x1b[0m");
 }
+
+
 
 fn rescure() {
     let recovery_path = mg().join("recovery").join("recovery.tar.xst");    

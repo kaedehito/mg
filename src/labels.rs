@@ -9,6 +9,7 @@ pub struct Label {
     pub name: String,
     pub uuid: String,
     pub time: String, // Use chrono::DateTime
+    pub current: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
@@ -89,6 +90,7 @@ impl Labels {
             name: name.to_string(),
             uuid: get_uuid(name),
             time: chrono::Local::now().to_string(),
+            current: true,
         };
 
         match labels_data {

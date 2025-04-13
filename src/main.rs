@@ -10,6 +10,9 @@ mod uuid;
 mod chenge;
 mod collect;
 mod unpack;
+mod restore;
+mod recovery_label;
+mod remove_all;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
