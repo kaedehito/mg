@@ -4,7 +4,7 @@ use std::fs;
 
 use crate::uuid::get_uuid;
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Label {
     pub name: String,
     pub uuid: String,
@@ -12,7 +12,7 @@ pub struct Label {
     pub current: bool,
 }
 
-#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Labels {
     pub labels: Vec<Label>,
 }
@@ -52,7 +52,71 @@ fn read_and_labels() -> Labels {
     labels_data
 }
 
+
+fn save_labels(labels: Labels){
+    let mg_path = crate::paths::mg().join("saves").join("saves.json");
+
+    if !mg_path.exists() {
+        std::fs::create_dir_all(&mg_path.parent().unwrap()).unwrap_or_else(|e| {
+            eprintln!("\x1b[31mAbort:\x1b[0m Failed to create directory: {e}");
+            std::process::exit(1);
+        });
+
+        let file = std::fs::File::create(&mg_path).unwrap_or_else(|e| {
+            eprintln!("\x1b[31mAbort:\x1b[0m Failed to create file: {e}");
+            std::process::exit(1);
+        });
+
+        let towrite = Labels { labels: Vec::new() };
+        serde_json::to_writer(file, &towrite).unwrap_or_else(|e| {
+            eprintln!("\x1b[31mAbort:\x1b[0m Failed to wite saves.json: {e}");
+            std::process::exit(1);
+        });
+    }
+
+    let file = std::fs::File::open(&mg_path).unwrap_or_else(|e| {
+        eprintln!("\x1b[31mAbort:\x1b[0m Failed to open saves.json: {}", e);
+        std::process::exit(1);
+    });
+
+    if let Err(e) = serde_json::to_writer(file, &labels){
+        eprintln!("\x1b[31mAbort:\x1b[0m Failed to save labels: {e}");
+        std::process::exit(1);
+    }
+}
+
+
+impl Label{
+    pub fn save(self){
+        let mut labels_data = read_and_labels();
+
+        let lab = labels_data.labels.iter_mut();
+
+        let mut vector: Vec<Label> = Vec::new();
+
+        for label in lab{
+            if &label.uuid == &self.uuid{
+                *label = self.clone();
+            }
+
+            vector.push(label.clone());            
+        }
+
+        save_labels(Labels { 
+            labels: vector 
+        });
+    }
+}
+
+
 impl Labels {
+    pub fn get_current_label() -> Option<Label> {
+        let labels_data = read_and_labels();
+
+        labels_data.labels.into_iter().find(|f| f.current == true)
+    }
+
+
     pub fn find_label(name: &str) -> bool {
         let labels_data = read_and_labels();
 
@@ -71,7 +135,6 @@ impl Labels {
 
         labels_data.labels.into_iter().find(|f| f.uuid == name_hash)
     }
-
     
     pub fn add_label(name: &str) -> std::io::Result<()> {
         let mg_path = crate::paths::mg().join("saves").join("saves.json");

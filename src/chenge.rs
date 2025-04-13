@@ -1,15 +1,15 @@
-use std::{env, fs::{self, File}, io::Write, path::Path};
+use std::{env, io::Write};
 
-use crate::{collect, compress, labels::{Label, Labels}, paths::{build_dir, mg}, recovery_label, remove_all, restore, spinner, unpack};
+use crate::{labels::{Label, Labels}, paths::mg, recovery_label, remove_all, restore, spinner, unpack};
 
 
 
 
 pub fn chenge(label: Option<String>, recovery: bool) {
 
-    let label_exists: Label;
+    let mut label_exists: Label;
 
-    if let Some(p) = label {   
+    if let Some(p) = label {
         label_exists = Labels::get_label(&p).unwrap_or_else(|| {
             eprintln!("\x1b[31mAbort:\x1b[0m Label not found");
             std::process::exit(1);
@@ -19,7 +19,7 @@ pub fn chenge(label: Option<String>, recovery: bool) {
             eprintln!("Error getting latest label: {}", e);
             std::process::exit(1);
         });
-    }
+    }    
 
     if !recovery{
         println!("Found label: \x1b[33m{}\x1b[0m", label_exists.name);
@@ -35,12 +35,12 @@ pub fn chenge(label: Option<String>, recovery: bool) {
     let mut input = String::new();
     std::io::stdin().read_line(&mut input).unwrap();
     if matches!(input.trim(), "y" | "yes") {
-        chenge_real(label_exists, recovery);
+        chenge_real(&mut label_exists, recovery);
     }    
 }
 
 
-fn chenge_real(label: Label, recovory: bool) {
+fn chenge_real(label: &mut Label, recovory: bool) {
     let mg_path = mg();
     let current = env::current_dir().unwrap();
 
@@ -58,8 +58,9 @@ fn chenge_real(label: Label, recovory: bool) {
     println!("\x1b[33mINFO:\x1b[0m Saving current progress to 'recovery' label...");
     recovery_label::recovery_label(&mg_path);
 
+    let uuid = label.uuid.clone();
 
-    let file_path = mg_path.join("saves").join(label.uuid).join("save.tar.zst");
+    let file_path = mg_path.join("saves").join(uuid).join("save.tar.zst");
 
     let prg = spinner::spawn_new_spinner();
 
@@ -77,7 +78,24 @@ fn chenge_real(label: Label, recovory: bool) {
         std::process::exit(1);
     });
 
+    prg.set_message("Updating saves.json...");
+
+    let mut old_current_label = Labels::get_current_label().unwrap_or_else(|| {
+        eprintln!("Failed to get old label");
+        std::process::exit(1);
+    });
+
+    old_current_label.current = false;
+    old_current_label.save();    
+
+
+    label.current = true;
+    label.clone().save();
+    prg.set_message("done!");
+
     prg.finish_and_clear();
+
+
 
     println!("Reset: \x1b[32mok\x1b[0m");
     println!("\x1b[33mYou can use 'mg chenge -r' to recover files\x1b[0m");

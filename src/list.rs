@@ -25,28 +25,22 @@ pub fn list() {
 
     labels_data.labels.sort_by(|a, b| b.time.cmp(&a.time));
 
-    if let Ok(parsed_time) =
-        chrono::DateTime::parse_from_str(&labels_data.labels[0].time, "%Y-%m-%d %H:%M:%S%.f %:z")
-    {
-        let local_time = parsed_time.with_timezone(&chrono::Local);
-        println!(
-            "\x1b[33m{}\x1b[0m - Last saved at {} [\x1b[32mLATEST\x1b[0m]",
-            labels_data.labels[0].name,
-            local_time.format("%Y-%m-%d %H:%M:%S")
-        );
-    } else {
-        eprintln!(
-            "\x1b[31mWarning:\x1b[0m Invalid timestamp for label '{}'.",
-            labels_data.labels[0].name
-        );
-    }
-
-    for label in labels_data.labels.iter().skip(1) {
+    for label in labels_data.labels {
         let time_str = &label.time;
         if let Ok(parsed_time) =
             chrono::DateTime::parse_from_str(time_str, "%Y-%m-%d %H:%M:%S%.f %:z")
         {
             let local_time = parsed_time.with_timezone(&chrono::Local);
+            
+            if label.current{
+                println!(
+                    "\x1b[33m{}\x1b[0m - Last saved at {}  \x1b[32m%\x1b[0m",
+                    label.name,
+                    local_time.format("%Y-%m-%d %H:%M:%S")
+                );  
+                continue;
+            }
+
             println!(
                 "\x1b[33m{}\x1b[0m - Last saved at {}",
                 label.name,
